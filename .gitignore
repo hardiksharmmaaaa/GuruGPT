@@ -81,3 +81,4 @@ venv.bak/
 # Vercel
 .vercel/
 pyproject.toml
+api/.env

@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Menu } from 'lucide-react';
-import Header from './components/Header';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { googleLogout } from '@react-oauth/google';
 import LandingPage from './components/LandingPage';
@@ -45,6 +42,11 @@ function App() {
     localStorage.removeItem('user');
   };
 
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   return (
     <Router>
       <Routes>
@@ -58,7 +60,7 @@ function App() {
           path="/app"
           element={
             <ProtectedRoute user={user}>
-              <MainApp user={user} onLogout={handleLogout} />
+              <MainApp user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
             </ProtectedRoute>
           }
         />

@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Menu, LogOut } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Header from './Header';
 import QuestionForm from './QuestionForm';
 import AnswerDisplay from './AnswerDisplay';
 import HistorySidebar from './HistorySidebar';
+import Profile from './Profile';
+import ProfileModal from './ProfileModal';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
-function MainApp({ user, onLogout }) {
+function MainApp({ user, onLogout, onUserUpdate }) {
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     // Theme State
     const [theme, setTheme] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -163,31 +166,23 @@ function MainApp({ user, onLogout }) {
         setResponse(null);
     };
 
+    const handleEditProfile = () => {
+        setIsProfileModalOpen(true);
+    };
+
+    const handleSaveProfile = (updatedUser) => {
+        onUserUpdate(updatedUser);
+        setIsProfileModalOpen(false);
+    };
+
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 flex flex-col">
             <div className="sticky top-0 z-50">
                 <Header theme={theme} toggleTheme={toggleTheme} />
                 {user && (
-                    <div className="absolute right-20 top-4 flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
-                            {user.picture ? (
-                                <img src={user.picture} alt={user.name} className="w-6 h-6 rounded-full" />
-                            ) : (
-                                <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">
-                                    {user.name?.charAt(0) || 'U'}
-                                </div>
-                            )}
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200 hidden sm:block">
-                                {user.name}
-                            </span>
-                        </div>
-                        <button
-                            onClick={onLogout}
-                            className="p-2 text-slate-500 hover:text-red-500 transition-colors bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded-full border border-slate-200 dark:border-slate-700 shadow-sm"
-                            title="Logout"
-                        >
-                            <LogOut className="w-5 h-5" />
-                        </button>
+                    <div className="absolute right-4 top-4">
+                        <Profile user={user} onLogout={onLogout} onEditProfile={handleEditProfile} />
                     </div>
                 )}
             </div>
@@ -233,6 +228,12 @@ function MainApp({ user, onLogout }) {
                     )}
                 </main>
             </div>
+            <ProfileModal
+                user={user}
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+                onSave={handleSaveProfile}
+            />
         </div>
     );
 }
