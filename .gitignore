@@ -63,7 +63,7 @@ __pycache__/
 *.so
 .Python
 env/
-venv/
+.venv/
 ENV/
 env.bak/
 venv.bak/
@@ -77,3 +77,4 @@ venv.bak/
 # Temporary files
 *.tmp
 *.temp
+pyproject.toml
