@@ -6,6 +6,8 @@ import QuestionForm from './QuestionForm';
 import AnswerDisplay from './AnswerDisplay';
 import HistorySidebar from './HistorySidebar';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
 function MainApp({ user, onLogout }) {
     // Theme State
     const [theme, setTheme] = useState(() => {
@@ -54,10 +56,10 @@ function MainApp({ user, onLogout }) {
         const fetchOptions = async () => {
             try {
                 const [subjects, levels, learningStyles, languages] = await Promise.all([
-                    axios.get('http://localhost:8000/subjects'),
-                    axios.get('http://localhost:8000/levels'),
-                    axios.get('http://localhost:8000/learning-styles'),
-                    axios.get('http://localhost:8000/languages')
+                    axios.get(`${API_BASE_URL}/subjects`),
+                    axios.get(`${API_BASE_URL}/levels`),
+                    axios.get(`${API_BASE_URL}/learning-styles`),
+                    axios.get(`${API_BASE_URL}/languages`)
                 ]);
 
                 setOptions({
@@ -108,7 +110,7 @@ function MainApp({ user, onLogout }) {
 
         setLoading(true);
         try {
-            const result = await axios.post('http://localhost:8000/generate-answer', formData);
+            const result = await axios.post(`${API_BASE_URL}/generate-answer`, formData);
             const newResponse = result.data;
             setResponse(newResponse);
 

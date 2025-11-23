@@ -1,0 +1,21 @@
+# Git
+.git
+.gitignore
+
+# Node.js
+frontend/node_modules
+frontend/build
+npm-debug.log
+
+# Python
+.venv
+__pycache__
+*.pyc
+
+# Docker
+docker-compose.yml
+deployment/
+
+# IDE
+.idea
+.vscode

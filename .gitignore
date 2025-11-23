@@ -77,4 +77,8 @@ venv.bak/
 # Temporary files
 *.tmp
 *.temp
+
+# Vercel
+.vercel/
+vercel.json
 pyproject.toml
