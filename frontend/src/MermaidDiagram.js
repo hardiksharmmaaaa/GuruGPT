@@ -1,71 +1,66 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 
+// Initialize mermaid once
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  securityLevel: 'loose',
+  themeVariables: {
+    primaryColor: '#3b82f6',
+    primaryTextColor: '#1f2937',
+    primaryBorderColor: '#2563eb',
+    lineColor: '#6b7280',
+    secondaryColor: '#f3f4f6',
+    tertiaryColor: '#e5e7eb',
+    background: '#ffffff',
+    mainBkg: '#ffffff',
+    secondBkg: '#f9fafb',
+    tertiaryBkg: '#f3f4f6',
+  },
+  fontFamily: 'Inter, system-ui, sans-serif',
+});
+
 const MermaidDiagram = ({ chart, id }) => {
-  const chartRef = useRef(null);
+  const containerRef = useRef(null);
+  const [svg, setSvg] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Initialize mermaid with configuration
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: 'base',
-      themeVariables: {
-        primaryColor: '#3b82f6',
-        primaryTextColor: '#1f2937',
-        primaryBorderColor: '#2563eb',
-        lineColor: '#6b7280',
-        secondaryColor: '#f3f4f6',
-        tertiaryColor: '#e5e7eb',
-        background: '#ffffff',
-        mainBkg: '#ffffff',
-        secondBkg: '#f9fafb',
-        tertiaryBkg: '#f3f4f6',
-      },
-      fontFamily: 'Inter, system-ui, sans-serif',
-      fontSize: 14,
-      flowchart: {
-        curve: 'linear',
-        padding: 20,
-      },
-      sequence: {
-        diagramMarginX: 50,
-        diagramMarginY: 10,
-        actorMargin: 50,
-        width: 150,
-        height: 65,
-        boxMargin: 10,
-        boxTextMargin: 5,
-        noteMargin: 10,
-        messageMargin: 35,
-      },
-    });
+    const renderDiagram = async () => {
+      if (!chart) return;
 
-    // Render the diagram
-    if (chartRef.current && chart) {
-      const renderDiagram = async () => {
-        try {
-          chartRef.current.innerHTML = '';
-          const { svg } = await mermaid.render(id || 'mermaid-diagram', chart);
-          chartRef.current.innerHTML = svg;
-        } catch (error) {
-          console.error('Error rendering Mermaid diagram:', error);
-          chartRef.current.innerHTML = `
-            <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p class="text-red-600 text-sm">Error rendering diagram</p>
-            </div>
-          `;
-        }
-      };
+      try {
+        // Generate a unique ID if not provided
+        const uniqueId = id || `mermaid-${Math.random().toString(36).substr(2, 9)}`;
 
-      renderDiagram();
-    }
+        // Clear previous error
+        setError(null);
+
+        // Render the diagram
+        const { svg } = await mermaid.render(uniqueId, chart);
+        setSvg(svg);
+      } catch (err) {
+        // Set error state to silently fail rendering
+        setError(err.message || 'Failed to render diagram');
+      }
+    };
+
+    renderDiagram();
   }, [chart, id]);
 
+  if (error) {
+    // Silently fail by returning null, without logging to the console.
+    return null;
+  }
+
   return (
-    <div className="my-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm overflow-x-auto">
-      <div ref={chartRef} className="flex justify-center" />
-    </div>
+    <div
+      ref={containerRef}
+      className="flex justify-center overflow-x-auto"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
   );
 };
 
-export default MermaidDiagram; 
+export default MermaidDiagram;
