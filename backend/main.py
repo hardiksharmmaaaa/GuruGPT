@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+import google.generativeai as genai
 
 # Load environment variables
 load_dotenv()
@@ -20,8 +20,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Configure Gemini API
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-2.5-pro')
+else:
+    model = None
 
 class TutorRequest(BaseModel):
     subject: str
@@ -39,20 +44,21 @@ class TutorResponse(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "AI Tutor API is running!"}
+    return {"message": "AI Tutor API is running with Gemini!"}
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "AI Tutor API"}
+    status = "healthy"
+    if not GEMINI_API_KEY:
+        status = "configured_without_key"
+    return {"status": status, "service": "AI Tutor API", "model": "gemini-1.5-pro"}
 
 @app.post("/generate-answer", response_model=TutorResponse)
 async def generate_answer(request: TutorRequest):
     try:
-        # Check if OpenAI API key is available
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
+        if not GEMINI_API_KEY or not model:
             return TutorResponse(
-                answer="Please configure your OpenAI API key in the .env file to use the AI tutor functionality.",
+                answer="Please configure your GEMINI_API_KEY in the .env file to use the AI tutor functionality.",
                 subject=request.subject,
                 level=request.level,
                 learning_style=request.learning_style,
@@ -83,6 +89,8 @@ IMPORTANT FORMATTING REQUIREMENTS:
 - Make the content visually organized and easy to follow
 - When helpful for visual learners, include diagrams using ```mermaid syntax
 - Use diagrams for: flowcharts, process flows, algorithms, data structures, concepts, etc.
+- **MERMAID DIAGRAM SIMPLICITY:** Keep text inside diagrams extremely simple. Use short, single-word labels if possible.
+- **AVOID SPECIAL CHARACTERS:** Do NOT use parentheses, quotes, or any special characters inside diagram text. For example, instead of `A[Node (with details)]`, use `A[NodeWithDetails]`. This is critical to prevent rendering errors.
 
 DIAGRAM EXAMPLES:
 - Flowchart: ```mermaid\nflowchart TD\n    A[Start] --> B[Process]\n    B --> C[End]\n```
@@ -91,21 +99,13 @@ DIAGRAM EXAMPLES:
 
 Provide a clear, engaging, and educational response that helps the student learn effectively."""
         
-        print(f"Making OpenAI API call for question: {request.question}")
+        print(f"Making Gemini API call for question: {request.question}")
         
-        # Make API call to OpenAI
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful and knowledgeable AI tutor."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=1000,
-            temperature=0.7
-        )
+        # Make API call to Gemini
+        response = model.generate_content(prompt)
         
-        answer = response.choices[0].message.content.strip()
-        print(f"OpenAI API response received successfully")
+        answer = response.text
+        print(f"Gemini API response received successfully")
         
         return TutorResponse(
             answer=answer,
@@ -117,26 +117,18 @@ Provide a clear, engaging, and educational response that helps the student learn
         
     except Exception as e:
         print(f"Error in generate_answer: {str(e)}")
-        print(f"Error type: {type(e)}")
         
-        # Check if it's an OpenAI quota/billing issue
-        if "quota" in str(e).lower() or "billing" in str(e).lower() or "429" in str(e):
-            return TutorResponse(
-                answer=f"""I apologize, but there's an issue with the OpenAI API quota or billing. 
+        # Handle specific Gemini errors if needed
+        if "400" in str(e) or "API key" in str(e):
+             return TutorResponse(
+                answer=f"""I apologize, but there's an issue with the Gemini API key. 
 
 **The issue:** {str(e)}
 
 **To fix this:**
-1. Check your OpenAI account billing at https://platform.openai.com/account/billing
-2. Ensure you have sufficient credits or an active payment method
-3. Your API key might need a paid plan to access GPT models
-
-**Demo Response for your question about {request.subject}:**
-This is a sample response showing how the AI tutor would work. The system is configured to provide {request.level}-level explanations using a {request.learning_style} approach in {request.language}.
-
-Your question: "{request.question}"
-
-Once the OpenAI API billing is resolved, you'll receive personalized, detailed responses tailored to your learning preferences.""",
+1. Get a valid API key from Google AI Studio (https://aistudio.google.com/)
+2. Update your .env file with GEMINI_API_KEY=your_key_here
+3. Restart the backend server""",
                 subject=request.subject,
                 level=request.level,
                 learning_style=request.learning_style,
